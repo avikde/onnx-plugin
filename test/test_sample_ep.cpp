@@ -35,6 +35,7 @@ int main(int argc, char* argv[]) {
     // Create environment
     OrtEnv* env = nullptr;
     CHECK_STATUS(g_ort->CreateEnv(ORT_LOGGING_LEVEL_VERBOSE, "test_sample_ep", &env));
+    printf("ONNX runtime loaded successfully\n---------------------\n");
 
     // Determine the plugin library path
     const char* plugin_path = "./libsample_ep.so";
