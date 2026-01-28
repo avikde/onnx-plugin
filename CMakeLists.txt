@@ -9,42 +9,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Find ONNX Runtime
 # ============================================================================
 
-# Option to specify custom ONNX Runtime path
-set(ONNXRUNTIME_ROOT "" CACHE PATH "Path to ONNX Runtime installation")
-
-if(ONNXRUNTIME_ROOT)
-    set(ONNXRUNTIME_INCLUDE_DIR "${ONNXRUNTIME_ROOT}/include")
-    set(ONNXRUNTIME_LIB_DIR "${ONNXRUNTIME_ROOT}/lib")
-else()
-    # Try to find in standard locations
-    find_path(ONNXRUNTIME_INCLUDE_DIR
-        NAMES onnxruntime_c_api.h
-        PATHS
-            /usr/local/include/onnxruntime
-            /usr/include/onnxruntime
-            /opt/onnxruntime/include
-        PATH_SUFFIXES
-            onnxruntime/core/session
-    )
-
-    find_library(ONNXRUNTIME_LIBRARY
-        NAMES onnxruntime
-        PATHS
-            /usr/local/lib
-            /usr/lib
-            /opt/onnxruntime/lib
-    )
-
-    if(ONNXRUNTIME_LIBRARY)
-        get_filename_component(ONNXRUNTIME_LIB_DIR ${ONNXRUNTIME_LIBRARY} DIRECTORY)
-    endif()
-endif()
-
-if(NOT ONNXRUNTIME_INCLUDE_DIR)
-    message(FATAL_ERROR
-        "ONNX Runtime headers not found. Please set ONNXRUNTIME_ROOT to the "
-        "ONNX Runtime installation directory, or install onnxruntime-dev.")
-endif()
+# set(ONNXRUNTIME_INCLUDE_DIR "/opt/onnxruntime/include")
+# set(ONNXRUNTIME_LIB_DIR "/opt/onnxruntime/lib")
+set(ONNXRUNTIME_INCLUDE_DIR "$ENV{HOME}/onnxruntime_install/include/onnxruntime")
+set(ONNXRUNTIME_LIB_DIR "$ENV{HOME}/onnxruntime_install/lib")
 
 message(STATUS "ONNX Runtime include dir: ${ONNXRUNTIME_INCLUDE_DIR}")
 message(STATUS "ONNX Runtime lib dir: ${ONNXRUNTIME_LIB_DIR}")

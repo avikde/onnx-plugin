@@ -95,8 +95,12 @@ SampleEpFactory::SampleEpFactory(const char* name, const ApiPtrs& apis)
     // Version 1.23 additions
     factory_.GetVendorId = GetVendorIdImpl;
     factory_.GetVersion = GetVersionImpl;
-
-    // Optional callbacks remain nullptr from memset
+    factory_.ValidateCompiledModelCompatibilityInfo = ValidateCompiledModelCompatibilityInfoImpl;
+    factory_.CreateAllocator = CreateAllocatorImpl;
+    factory_.ReleaseAllocator = ReleaseAllocatorImpl;
+    factory_.CreateDataTransfer = CreateDataTransferImpl;
+    factory_.IsStreamAware = IsStreamAwareImpl;
+    factory_.CreateSyncStreamForDevice = CreateSyncStreamForDeviceImpl;
 }
 
 SampleEpFactory::~SampleEpFactory() = default;
@@ -188,6 +192,63 @@ void ORT_API_CALL SampleEpFactory::ReleaseEpImpl(OrtEpFactory* this_, OrtEp* ep)
     delete sample_ep;
 }
 
+OrtStatus* ORT_API_CALL SampleEpFactory::ValidateCompiledModelCompatibilityInfoImpl(
+    OrtEpFactory* this_,
+    const OrtHardwareDevice* const* devices,
+    size_t num_devices,
+    const char* compatibility_info,
+    OrtCompiledModelCompatibility* model_compatibility) noexcept {
+    (void)this_;
+    (void)devices;
+    (void)num_devices;
+    (void)compatibility_info;
+    *model_compatibility = OrtCompiledModelCompatibility_EP_NOT_APPLICABLE;
+    return nullptr;
+}
+
+OrtStatus* ORT_API_CALL SampleEpFactory::CreateAllocatorImpl(
+    OrtEpFactory* this_,
+    const OrtMemoryInfo* memory_info,
+    const OrtKeyValuePairs* allocator_options,
+    OrtAllocator** allocator) noexcept {
+    (void)this_;
+    (void)memory_info;
+    (void)allocator_options;
+    *allocator = nullptr;  // Use default CPU allocator
+    return nullptr;
+}
+
+void ORT_API_CALL SampleEpFactory::ReleaseAllocatorImpl(
+    OrtEpFactory* this_, OrtAllocator* allocator) noexcept {
+    (void)this_;
+    (void)allocator;
+}
+
+OrtStatus* ORT_API_CALL SampleEpFactory::CreateDataTransferImpl(
+    OrtEpFactory* this_,
+    OrtDataTransferImpl** data_transfer) noexcept {
+    (void)this_;
+    *data_transfer = nullptr;  // No custom data transfer needed for CPU EP
+    return nullptr;
+}
+
+bool ORT_API_CALL SampleEpFactory::IsStreamAwareImpl(const OrtEpFactory* this_) noexcept {
+    (void)this_;
+    return false;
+}
+
+OrtStatus* ORT_API_CALL SampleEpFactory::CreateSyncStreamForDeviceImpl(
+    OrtEpFactory* this_,
+    const OrtMemoryDevice* memory_device,
+    const OrtKeyValuePairs* stream_options,
+    OrtSyncStreamImpl** stream) noexcept {
+    (void)this_;
+    (void)memory_device;
+    (void)stream_options;
+    *stream = nullptr;
+    return nullptr;
+}
+
 // ============================================================================
 // SampleEp Implementation
 // ============================================================================
@@ -215,7 +276,15 @@ SampleEp::SampleEp(SampleEpFactory* factory, const OrtLogger* session_logger)
     ep_.Compile = CompileImpl;
     ep_.ReleaseNodeComputeInfos = ReleaseNodeComputeInfosImpl;
 
-    // Optional callbacks remain nullptr from memset
+    // 1.23 optional callback stubs
+    ep_.GetPreferredDataLayout = GetPreferredDataLayoutImpl;
+    ep_.ShouldConvertDataLayoutForOp = ShouldConvertDataLayoutForOpImpl;
+    ep_.SetDynamicOptions = SetDynamicOptionsImpl;
+    ep_.OnRunStart = OnRunStartImpl;
+    ep_.OnRunEnd = OnRunEndImpl;
+    ep_.CreateAllocator = EpCreateAllocatorImpl;
+    ep_.CreateSyncStreamForDevice = EpCreateSyncStreamForDeviceImpl;
+    ep_.GetCompiledModelCompatibilityInfo = GetCompiledModelCompatibilityInfoImpl;
 }
 
 SampleEp::~SampleEp() = default;
@@ -326,6 +395,74 @@ void ORT_API_CALL SampleEp::ReleaseNodeComputeInfosImpl(
         auto* sample_info = SampleNodeComputeInfo::FromOrt(node_compute_infos[i]);
         delete sample_info;
     }
+}
+
+OrtStatus* ORT_API_CALL SampleEp::GetPreferredDataLayoutImpl(
+    OrtEp* this_, OrtEpDataLayout* preferred_data_layout) noexcept {
+    (void)this_;
+    *preferred_data_layout = OrtEpDataLayout::OrtEpDataLayout_NCHW;
+    return nullptr;
+}
+
+OrtStatus* ORT_API_CALL SampleEp::ShouldConvertDataLayoutForOpImpl(
+    OrtEp* this_, const char* domain, const char* op_type,
+    OrtEpDataLayout target_data_layout, int* should_convert) noexcept {
+    (void)this_;
+    (void)domain;
+    (void)op_type;
+    (void)target_data_layout;
+    *should_convert = -1;  // Let ORT decide
+    return nullptr;
+}
+
+OrtStatus* ORT_API_CALL SampleEp::SetDynamicOptionsImpl(
+    OrtEp* this_, const char* const* option_keys,
+    const char* const* option_values, size_t num_options) noexcept {
+    (void)this_;
+    (void)option_keys;
+    (void)option_values;
+    (void)num_options;
+    return nullptr;
+}
+
+OrtStatus* ORT_API_CALL SampleEp::OnRunStartImpl(
+    OrtEp* this_, const OrtRunOptions* run_options) noexcept {
+    (void)this_;
+    (void)run_options;
+    return nullptr;
+}
+
+OrtStatus* ORT_API_CALL SampleEp::OnRunEndImpl(
+    OrtEp* this_, const OrtRunOptions* run_options, bool sync_stream) noexcept {
+    (void)this_;
+    (void)run_options;
+    (void)sync_stream;
+    return nullptr;
+}
+
+OrtStatus* ORT_API_CALL SampleEp::EpCreateAllocatorImpl(
+    OrtEp* this_, const OrtMemoryInfo* memory_info,
+    OrtAllocator** allocator) noexcept {
+    (void)this_;
+    (void)memory_info;
+    *allocator = nullptr;  // Use default
+    return nullptr;
+}
+
+OrtStatus* ORT_API_CALL SampleEp::EpCreateSyncStreamForDeviceImpl(
+    OrtEp* this_, const OrtMemoryDevice* memory_device,
+    OrtSyncStreamImpl** stream) noexcept {
+    (void)this_;
+    (void)memory_device;
+    *stream = nullptr;
+    return nullptr;
+}
+
+const char* ORT_API_CALL SampleEp::GetCompiledModelCompatibilityInfoImpl(
+    OrtEp* this_, const OrtGraph* graph) noexcept {
+    (void)this_;
+    (void)graph;
+    return nullptr;
 }
 
 // ============================================================================

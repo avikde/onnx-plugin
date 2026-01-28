@@ -19,7 +19,7 @@ This repository demonstrates how to create a custom Execution Provider plugin fo
 - C++17 compatible compiler (GCC 9+ or Clang 10+)
 - ONNX Runtime 1.22+ (with EP Plugin API support)
 
-## Installing ONNX Runtime on WSL
+## Installing ONNX Runtime on Linux / WSL
 
 ### Install from Pre-built Release
 
@@ -39,13 +39,26 @@ ls /opt/onnxruntime/include
 ls /opt/onnxruntime/lib
 ```
 
+### Build from source (Linux / WSL)
+
+```bash
+git clone --recursive https://github.com/Microsoft/onnxruntime.git
+cd onnxruntime
+git checkout v1.23.2
+# Build, skipping tests
+./build.sh --config RelWithDebInfo --build_shared_lib --parallel --compile_no_warning_as_error --skip_submodule_sync --cmake_extra_defines onnxruntime_BUILD_UNIT_TESTS=OFF
+cmake --install build/Linux/RelWithDebInfo --prefix $HOME/onnxruntime_install
+```
+
 ### Configure Library Path
 
 Add the ONNX Runtime library to your library path:
 
 ```bash
 # Add to your ~/.bashrc or ~/.zshrc
-echo 'export LD_LIBRARY_PATH=/opt/onnxruntime/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+# echo 'export LD_LIBRARY_PATH=/opt/onnxruntime/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+# built from source
+echo 'export LD_LIBRARY_PATH=$HOME/onnxruntime_install/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -55,16 +68,10 @@ source ~/.bashrc
 
 ```bash
 # Clone this repository
-git clone <repository-url> onnx-plugin
+git clone https://github.com/avikde/onnx-plugin.git
 cd onnx-plugin
-
-# Create build directory
 mkdir build && cd build
-
-# Configure with CMake
-cmake .. -DONNXRUNTIME_ROOT=/opt/onnxruntime
-
-# Build
+cmake ..
 cmake --build . --parallel
 ```
 
