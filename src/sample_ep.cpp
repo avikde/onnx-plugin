@@ -319,37 +319,33 @@ OrtStatus* ORT_API_CALL SampleEp::GetCapabilityImpl(
         return status;
     }
 
-    // Collect supported nodes (Add and Mul operators as an example)
-    std::vector<const OrtNode*> supported_nodes;
-
+    // Check each node and claim supported operators
     for (size_t i = 0; i < num_nodes; ++i) {
         const OrtNode* node = all_nodes[i];
-        if (node) {
-            const char* op_type = nullptr;
-            status = apis.ort_api->Node_GetOperatorType(node, &op_type);
+        if (!node) continue;
+
+        const char* op_type = nullptr;
+        status = apis.ort_api->Node_GetOperatorType(node, &op_type);
+        if (status != nullptr) {
+            return status;
+        }
+
+        // Support Add and Mul operators as an example
+        if (op_type && (std::strcmp(op_type, "Add") == 0 ||
+                       std::strcmp(op_type, "Mul") == 0)) {
+            printf("  [SampleEP] Claiming op: %s\n", op_type);
+
+            // Add each supported node as its own fused group
+            const OrtNode* single_node = node;
+            status = apis.ep_api->EpGraphSupportInfo_AddNodesToFuse(
+                graph_support_info,
+                &single_node,
+                1,
+                nullptr);
+
             if (status != nullptr) {
                 return status;
             }
-
-            // Support Add and Mul operators as an example
-            if (op_type && (std::strcmp(op_type, "Add") == 0 ||
-                           std::strcmp(op_type, "Mul") == 0)) {
-                supported_nodes.push_back(node);
-            }
-        }
-    }
-
-    // Report supported nodes to ONNX Runtime
-    if (!supported_nodes.empty()) {
-        // Add nodes to fuse - they'll be compiled into a single fused node
-        status = apis.ep_api->EpGraphSupportInfo_AddNodesToFuse(
-            graph_support_info,
-            supported_nodes.data(),
-            supported_nodes.size(),
-            nullptr);  // no fusion options
-
-        if (status != nullptr) {
-            return status;
         }
     }
 

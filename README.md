@@ -75,21 +75,10 @@ cmake ..
 cmake --build . --parallel
 ```
 
-### Build Output
-
 After building, you'll have:
 
 - `libsample_ep.so` - The plugin EP shared library
 - `test_sample_ep` - A test application (if `BUILD_TEST_APP=ON`)
-
-### Verify Exported Symbols
-
-```bash
-nm -D libsample_ep.so | grep -E "CreateEp|ReleaseEp"
-# Should show:
-# T CreateEpFactories
-# T ReleaseEpFactory
-```
 
 ## Project Structure
 
