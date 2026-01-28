@@ -1,7 +1,9 @@
-// Copyright (c) Sample EP Authors. Licensed under the MIT License.
-// Test application demonstrating how to load and use the Sample EP plugin
-// Compatible with ONNX Runtime 1.23+
-
+/**
+ * Test application demonstrating how to load and use the Sample EP plugin
+ * Compatible with ONNX Runtime 1.23+
+ * Author: Avik De
+ * Licensed under the MIT License.
+ */
 #include <onnxruntime_c_api.h>
 #include <iostream>
 #include <vector>

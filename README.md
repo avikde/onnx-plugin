@@ -240,7 +240,7 @@ export LD_LIBRARY_PATH=/opt/onnxruntime/lib:$LD_LIBRARY_PATH
 
 ### "undefined symbol" errors
 
-Ensure your ONNX Runtime version supports the EP Plugin API (1.22+).
+Ensure your ONNX Runtime version supports the EP Plugin API (1.23+).
 
 ### Invalid conversion to 'noexcept' function pointer
 
