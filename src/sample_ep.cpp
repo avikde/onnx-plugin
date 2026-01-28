@@ -5,6 +5,7 @@
 #include "sample_ep.h"
 #include <cstring>
 #include <cstddef>
+#include <cstdio>
 
 // Platform-specific export macro
 #if defined(_WIN32)
@@ -334,6 +335,7 @@ OrtStatus* ORT_API_CALL SampleEp::GetCapabilityImpl(
         if (op_type && (std::strcmp(op_type, "Add") == 0 ||
                        std::strcmp(op_type, "Mul") == 0)) {
             printf("  [SampleEP] Claiming op: %s\n", op_type);
+            fflush(stdout);
 
             // Add each supported node as its own fused group
             const OrtNode* single_node = node;
