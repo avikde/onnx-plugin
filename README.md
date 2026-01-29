@@ -1,6 +1,6 @@
 # ONNX Runtime Execution Provider Plugin
 
-A sample implementation of an ONNX Runtime Execution Provider (EP) plugin that can be loaded dynamically at runtime.
+A sample implementation of an ONNX Runtime Execution Provider (EP) plugin that can be loaded dynamically at runtime. It is designed for onnxruntime 1.23+.
 
 ## Overview
 
@@ -11,13 +11,6 @@ This repository demonstrates how to create a custom Execution Provider plugin fo
 - Implements `OrtEp` to handle node capability detection and kernel compilation
 - Implements `OrtNodeComputeInfo` with `CreateState`, `Compute`, and `ReleaseState` callbacks
 - Supports `Add` and `Mul` operators as a demonstration
-
-## Prerequisites
-
-- WSL2 (Ubuntu 22.04 or later recommended)
-- CMake 3.18+
-- C++17 compatible compiler (GCC 9+ or Clang 10+)
-- ONNX Runtime 1.22+ (with EP Plugin API support)
 
 ## Installing ONNX Runtime on Linux / WSL
 
@@ -71,7 +64,7 @@ source ~/.bashrc
 git clone https://github.com/avikde/onnx-plugin.git
 cd onnx-plugin
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build . --parallel
 ```
 
@@ -207,10 +200,98 @@ Then implement the computation logic in `SampleNodeComputeInfo::ComputeImpl()`.
 
 To support actual hardware (GPU, NPU, etc.):
 
-1. In `GetSupportedDevicesImpl()`, filter devices by `HardwareDevice_Type()` for your hardware type
-2. Implement `CreateAllocator` callback for device memory allocation
-3. Implement `CreateDataTransfer` for host-device data transfers
-4. Dispatch computation to hardware in `ComputeImpl()`
+#### 1. Device Discovery
+
+In `GetSupportedDevicesImpl()`, filter devices by hardware type:
+
+```cpp
+OrtHardwareDeviceType hw_type = apis.ort_api->HardwareDevice_Type(device);
+if (hw_type == OrtHardwareDeviceType_GPU) {
+    // Add this device to supported list
+}
+```
+
+#### 2. Memory Management
+
+Implement the `CreateAllocator` callback to provide device memory allocation:
+
+```cpp
+OrtStatus* CreateAllocatorImpl(OrtEpFactory* this_,
+    const OrtMemoryInfo* memory_info,
+    const OrtKeyValuePairs* allocator_options,
+    OrtAllocator** allocator) noexcept {
+    // Create and return a custom allocator for device memory
+    *allocator = my_device_allocator;
+    return nullptr;
+}
+```
+
+#### 3. Data Transfer
+
+Implement `CreateDataTransfer` for host-device memory copies:
+
+```cpp
+OrtStatus* CreateDataTransferImpl(OrtEpFactory* this_,
+    OrtDataTransferImpl** data_transfer) noexcept {
+    // Create data transfer implementation for host <-> device copies
+    *data_transfer = my_data_transfer;
+    return nullptr;
+}
+```
+
+#### 4. Synchronous vs Asynchronous Execution
+
+EPs can execute in two modes:
+
+**Synchronous (stream-unaware):** The default mode. `ComputeImpl()` must block until results are ready:
+
+```cpp
+bool IsStreamAwareImpl(const OrtEpFactory* this_) noexcept {
+    return false;  // Synchronous execution
+}
+
+OrtStatus* ComputeImpl(...) noexcept {
+    launch_kernel(...);
+    wait_for_completion();  // Must block here
+    return nullptr;
+}
+```
+
+**Asynchronous (stream-aware):** For hardware with command queues. Work is launched and ORT handles synchronization:
+
+```cpp
+bool IsStreamAwareImpl(const OrtEpFactory* this_) noexcept {
+    return true;  // Async execution via streams
+}
+
+OrtStatus* CreateSyncStreamForDeviceImpl(OrtEpFactory* this_,
+    const OrtMemoryDevice* memory_device,
+    const OrtKeyValuePairs* stream_options,
+    OrtSyncStreamImpl** stream) noexcept {
+    // Create a stream/queue handle for async execution
+    *stream = my_stream_wrapper;
+    return nullptr;
+}
+
+OrtStatus* ComputeImpl(...) noexcept {
+    launch_kernel_async(stream, ...);  // Non-blocking
+    return nullptr;  // ORT syncs the stream when needed
+}
+```
+
+#### 5. Hardware Dispatch
+
+In `ComputeImpl()`, dispatch computation to your hardware:
+
+```cpp
+OrtStatus* ComputeImpl(...) noexcept {
+    // Get input/output tensors from kernel context
+    // Copy data to device if needed (or use device allocator)
+    // Launch hardware kernel
+    // Copy results back if needed
+    return nullptr;
+}
+```
 
 ## API Reference
 
@@ -219,16 +300,6 @@ To support actual hardware (GPU, NPU, etc.):
 - [Example Plugin EP (ORT repo)](https://github.com/microsoft/onnxruntime/tree/main/onnxruntime/test/autoep/library)
 
 ## Troubleshooting
-
-### "ONNX Runtime headers not found"
-
-Ensure `ONNXRUNTIME_ROOT` points to the correct directory:
-
-```bash
-cmake .. -DONNXRUNTIME_ROOT=/opt/onnxruntime
-```
-
-The directory should contain `include/onnxruntime_c_api.h`.
 
 ### "cannot open shared object file"
 
