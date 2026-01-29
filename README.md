@@ -1,6 +1,6 @@
 # ONNX Runtime Execution Provider Plugin
 
-A sample implementation of an ONNX Runtime Execution Provider (EP) plugin that can be loaded dynamically at runtime.
+A sample implementation of an ONNX Runtime Execution Provider (EP) plugin that can be loaded dynamically at runtime. It is designed for onnxruntime 1.23+.
 
 ## Overview
 
@@ -11,13 +11,6 @@ This repository demonstrates how to create a custom Execution Provider plugin fo
 - Implements `OrtEp` to handle node capability detection and kernel compilation
 - Implements `OrtNodeComputeInfo` with `CreateState`, `Compute`, and `ReleaseState` callbacks
 - Supports `Add` and `Mul` operators as a demonstration
-
-## Prerequisites
-
-- WSL2 (Ubuntu 22.04 or later recommended)
-- CMake 3.18+
-- C++17 compatible compiler (GCC 9+ or Clang 10+)
-- ONNX Runtime 1.22+ (with EP Plugin API support)
 
 ## Installing ONNX Runtime on Linux / WSL
 
@@ -71,7 +64,7 @@ source ~/.bashrc
 git clone https://github.com/avikde/onnx-plugin.git
 cd onnx-plugin
 mkdir build && cd build
-cmake ..
+cmake .. -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 cmake --build . --parallel
 ```
 
@@ -219,16 +212,6 @@ To support actual hardware (GPU, NPU, etc.):
 - [Example Plugin EP (ORT repo)](https://github.com/microsoft/onnxruntime/tree/main/onnxruntime/test/autoep/library)
 
 ## Troubleshooting
-
-### "ONNX Runtime headers not found"
-
-Ensure `ONNXRUNTIME_ROOT` points to the correct directory:
-
-```bash
-cmake .. -DONNXRUNTIME_ROOT=/opt/onnxruntime
-```
-
-The directory should contain `include/onnxruntime_c_api.h`.
 
 ### "cannot open shared object file"
 
