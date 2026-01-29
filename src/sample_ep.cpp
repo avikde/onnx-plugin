@@ -567,7 +567,7 @@ OrtStatus* ORT_API_CALL SampleNodeComputeInfo::ComputeImpl(
     status = info->ort_api->GetTensorMutableData(output, (void**)&data_out);
     if (status != nullptr) return status;
 
-    // Perform element-wise addition
+    // Perform element-wise addition (even for Mul, just for demonstration)
     // In a real EP, this would dispatch to hardware
     for (size_t i = 0; i < total_elements; ++i) {
         data_out[i] = data_0[i] + data_1[i];
